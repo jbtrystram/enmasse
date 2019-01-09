@@ -33,7 +33,19 @@ BUILDDIR=build
 INSTALLNAME=enmasse-$(TAG)
 INSTALLDIR=$(BUILDDIR)/$(INSTALLNAME)
 PACKAGE_INSTALL_DIR=$(INSTALLDIR)/install
-MODULES=address-space-controller extra api-server api-service grafana none-authservice prometheus service-broker cluster-service-broker standard-authservice tenant alertmanager kube-state-metrics iot
+
+IOT_MODULES=\
+	iot/auth \
+	iot/core \
+	iot/device-registry \
+	iot/http-adapter \
+	iot/iot-gc-s2i \
+	iot/iot-operator-s2i \
+	iot/qdr-configurator-s2i \
+	iot/tenant \
+	iot/tenant-service \
+
+MODULES=address-space-controller extra api-server api-service grafana none-authservice prometheus service-broker cluster-service-broker standard-authservice tenant alertmanager kube-state-metrics $(IOT_MODULES)
 
 prepare:
 	mkdir -p $(PACKAGE_INSTALL_DIR)
@@ -43,7 +55,7 @@ prepare:
 
 replace_images: prepare
 	mkdir -p $(BUILDDIR)/replaced
-	cp -r $(MODULES) $(BUILDDIR)/replaced
+	cp -r --parents $(MODULES) $(BUILDDIR)/replaced
 	for i in `find $(BUILDDIR)/replaced -name "*.yaml"`; do \
 		cat $$i | ADDRESS_SPACE_CONTROLLER_IMAGE=$(ADDRESS_SPACE_CONTROLLER_IMAGE) \
 			API_SERVER_IMAGE=$(API_SERVER_IMAGE) \
@@ -171,7 +183,19 @@ $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE): replace_images
 		mv $$i.tmp $$i; \
 	done
 
-install: ansible_install component_install $(ENMASSE_WITH_STANDARD_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_NONE_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_NONE_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_TEMPLATE)
+ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE=$(PACKAGE_INSTALL_DIR)/bundles/enmasse-iot-with-standard-authservice
+$(ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE): replace_images
+	mkdir -p $(ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE)
+	for i in address-space-controller extra api-server api-service standard-authservice tenant $(IOT_MODULES); do \
+		cp $(BUILDDIR)/replaced/$$i/*.yaml $(ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE)/; \
+	done
+	for i in `find $(ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE) -name "*.yaml"`; do \
+		cat $$i | NAMESPACE=$(DEFAULT_PROJECT) envsubst '$${NAMESPACE}' > $$i.tmp; \
+		mv $$i.tmp $$i; \
+	done
+
+install: ansible_install component_install $(ENMASSE_WITH_STANDARD_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_NONE_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_NONE_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_TEMPLATE) \
+	$(ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE)
 	cp -r $(PACKAGE_DOCS_DIR) $(INSTALLDIR)/docs
 
 package: prepare install
@@ -179,4 +203,6 @@ package: prepare install
 
 coverage:
 
-.PHONY: prepare package clean $(ENMASSE_WITH_STANDARD_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_NONE_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_NONE_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE)
+.PHONY: prepare package clean $(ENMASSE_WITH_STANDARD_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_NONE_AUTHSERVICE_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_NONE_AUTHSERVICE_TEMPLATE) $(ENMASSE_WITH_STANDARD_AUTHSERVICE_MONITORING_BUNDLE) \
+	$(ENMASSE_IOT_WITH_STANDARD_AUTHSERVICE_BUNDLE)
+
