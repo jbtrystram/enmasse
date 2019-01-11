@@ -55,7 +55,7 @@ prepare:
 
 replace_images: prepare
 	mkdir -p $(BUILDDIR)/replaced
-	cp -r --parents $(MODULES) $(BUILDDIR)/replaced
+	rsync -R -r $(MODULES) $(BUILDDIR)/replaced
 	for i in `find $(BUILDDIR)/replaced -name "*.yaml"`; do \
 		cat $$i | ADDRESS_SPACE_CONTROLLER_IMAGE=$(ADDRESS_SPACE_CONTROLLER_IMAGE) \
 			API_SERVER_IMAGE=$(API_SERVER_IMAGE) \
