@@ -1,7 +1,7 @@
 TOPDIR=$(dir $(lastword $(MAKEFILE_LIST)))
 DOCKER_REGISTRY ?= docker.io
 DOCKER_ORG      ?= enmasseproject
-DOCKER          ?= docker
+DOCKER          ?= podman
 PROJECT_PREFIX  ?= enmasse
 PROJECT_NAME    ?= $(shell basename $(CURDIR))
 NAMESPACE       ?= $(shell oc project -q)
@@ -36,7 +36,7 @@ buildpush:
 
 docker_build: package
 	if [ -f Dockerfile ]; then $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg maven_version=$(MAVEN_VERSION) --build-arg version=$(VERSION) --build-arg commit=$(COMMIT) -t $(PROJECT_PREFIX)-$(PROJECT_NAME):$(VERSION) . ; fi
-	if [ -f Dockerfile ]; then docker images | grep $(PROJECT_PREFIX); fi
+	if [ -f Dockerfile ]; then $(DOCKER) images | grep $(PROJECT_PREFIX); fi
 
 docker_tag:
 	if [ -f Dockerfile ]; then $(DOCKER) tag $(PROJECT_PREFIX)-$(PROJECT_NAME):$(VERSION) $(DOCKER_REGISTRY)/$(DOCKER_ORG)/$(PROJECT_NAME):$(TAG) ; fi
