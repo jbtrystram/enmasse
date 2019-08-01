@@ -6,8 +6,8 @@
 package io.enmasse.iot.registry.infinispan.config;
 
 import org.eclipse.hono.deviceregistry.ApplicationConfig;
+import org.eclipse.hono.service.management.tenant.TenantManagementHttpEndpoint;
 import org.eclipse.hono.service.tenant.TenantAmqpEndpoint;
-import org.eclipse.hono.service.tenant.TenantHttpEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,7 +31,7 @@ public class InfinispanRegistryConfig extends ApplicationConfig {
     @Scope("prototype")
     @ConditionalOnBean(name="CacheTenantService")
     public TenantAmqpEndpoint tenantAmqpEndpoint() {
-        return new TenantAmqpEndpoint(vertx());
+        return super.tenantAmqpEndpoint();
     }
 
     /**
@@ -43,7 +43,7 @@ public class InfinispanRegistryConfig extends ApplicationConfig {
     @Override
     @Scope("prototype")
     @ConditionalOnBean(name="CacheTenantService")
-    public TenantHttpEndpoint tenantHttpEndpoint() {
-        return new TenantHttpEndpoint(vertx());
+    public TenantManagementHttpEndpoint tenantHttpEndpoint() {
+        return super.tenantHttpEndpoint();
     }
 }
