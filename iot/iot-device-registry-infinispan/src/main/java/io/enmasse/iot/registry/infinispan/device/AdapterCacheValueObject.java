@@ -20,17 +20,33 @@ public class AdapterCacheValueObject implements Serializable {
 
     private String managementCacheExpectedVersion;
 
-    public AdapterCacheValueObject(String crentential, String deviceId, String managementCacheExpectedVersion) {
-        this.crentential = crentential;
+    public AdapterCacheValueObject(String credential, String deviceId, String managementCacheExpectedVersion) {
+        this.crentential = credential;
         this.deviceId = deviceId;
         this.managementCacheExpectedVersion = managementCacheExpectedVersion;
+    }
+
+    public String getCrentential() {
+        return crentential;
     }
 
     public void setInSync(boolean inSync) {
         this.inSync = inSync;
     }
 
+    public boolean isInSync() {
+        return inSync;
+    }
+
+    public String getDeviceId() {
+        return deviceId;
+    }
+
     public void setManagementCacheExpectedVersion(String newVersion) {
         this.managementCacheExpectedVersion = newVersion;
+    }
+
+    public String getManagementCacheExpectedVersion() {
+        return managementCacheExpectedVersion;
     }
 }
