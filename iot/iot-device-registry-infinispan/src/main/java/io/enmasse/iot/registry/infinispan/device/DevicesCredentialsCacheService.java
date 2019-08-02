@@ -1,19 +1,13 @@
 package io.enmasse.iot.registry.infinispan.device;
 
-import static java.net.HttpURLConnection.HTTP_CONFLICT;
-import static java.net.HttpURLConnection.HTTP_CREATED;
-import static java.net.HttpURLConnection.HTTP_PRECON_FAILED;
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static java.net.HttpURLConnection.HTTP_OK;
-
 import io.enmasse.iot.registry.infinispan.credentials.CredentialsKey;
-import io.enmasse.iot.registry.infinispan.util.Versioned;
 import io.opentracing.Span;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 
+import static java.net.HttpURLConnection.*;
 import org.eclipse.hono.deviceregistry.FileBasedRegistrationService;
 import org.eclipse.hono.service.credentials.CredentialsService;
 import org.eclipse.hono.service.management.Id;
@@ -26,12 +20,9 @@ import org.eclipse.hono.service.management.device.DeviceManagementService;
 import org.eclipse.hono.util.CredentialsConstants;
 import org.eclipse.hono.util.CredentialsResult;
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.commons.util.CloseableIterator;
-import org.infinispan.commons.util.CloseableIteratorSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -63,31 +54,57 @@ public class DevicesCredentialsCacheService implements CredentialsManagementServ
     }
 
     @Override
+    //fixme nested async calls
     public void get(String tenantId, String type, String authId, JsonObject clientContext, Span span,
             Handler<AsyncResult<CredentialsResult<JsonObject>>> resultHandler) {
 
         final CredentialsKey key = new CredentialsKey(tenantId, authId, type);
 
-        credentials.getAsync(key).thenAccept(credential -> {
-            if (credential == null) {
-                log.debug("Credential not found [tenant-id: {}, auth-id: {}, type: {}]", tenantId, authId, type);
-                resultHandler.handle(Future.succeededFuture(CredentialsResult.from(HTTP_NOT_FOUND)));
-            } else if (clientContext != null && !clientContext.isEmpty()) {
-                if (contextMatches(clientContext, new JsonObject(credential))) {
-                    log.debug("Retrieve credential, context matches [tenant-id: {}, auth-id: {}, type: {}]", tenantId,
-                            authId, type);
-                    resultHandler.handle(Future.succeededFuture(
-                            CredentialsResult.from(HTTP_OK, new JsonObject(credential))));
+        adapterCache.getAsync(key).thenAccept(credential -> {
+            if (credential != null) {
+
+                if (! credential.isInSync()) {
+                    final RegistrationKey mgmtKey = new RegistrationKey(tenantId, credential.getDeviceId());
+                    ManagementCacheValueObject mgmtCred = managementCache.get(mgmtKey);
+                    if (mgmtCred.isVersionMatch(Optional.of(credential.getManagementCacheExpectedVersion()))){
+                        credential.setInSync(true);
+                        adapterCache.putAsync(key, credential);
+
+                        verifyContextAndReturn(tenantId, authId, type, credential, clientContext, resultHandler);
+                    } else {
+                        log.debug("Credential not in synced [tenant-id: {}, auth-id: {}, type: {}]", tenantId, authId, type);
+                        resultHandler.handle(Future.succeededFuture(CredentialsResult.from(HTTP_INTERNAL_ERROR)));
+                    }
                 } else {
-                    log.debug("Context mismatch [tenant-id: {}, auth-id: {}, type: {}]", tenantId, authId, type);
-                    resultHandler.handle(Future.succeededFuture(CredentialsResult.from(HTTP_NOT_FOUND)));
+                    verifyContextAndReturn(tenantId, authId, type, credential, clientContext, resultHandler);
                 }
             } else {
-                log.debug("Retrieve credential [tenant-id: {}, auth-id: {}, type: {}]", tenantId, authId, type);
-                resultHandler.handle(Future.succeededFuture(
-                        CredentialsResult.from(HTTP_OK, new JsonObject(credential))));
+                    log.debug("Credential not found [tenant-id: {}, auth-id: {}, type: {}]", tenantId, authId, type);
+                    resultHandler.handle(Future.succeededFuture(CredentialsResult.from(HTTP_NOT_FOUND)));
             }
         });
+    }
+
+    private void verifyContextAndReturn(final String tenantId, final String authId, final String type,
+            final AdapterCacheValueObject credential, final JsonObject clientContext,
+            final Handler<AsyncResult<CredentialsResult<JsonObject>>> resultHandler) {
+
+        if (clientContext != null && !clientContext.isEmpty()) {
+            if (contextMatches(clientContext, new JsonObject(credential.getCrentential()))) {
+                log.debug("Retrieve credential, context matches [tenant-id: {}, auth-id: {}, type: {}]",
+                        tenantId,
+                        authId, type);
+                resultHandler.handle(Future.succeededFuture(
+                        CredentialsResult.from(HTTP_OK, new JsonObject(credential.getCrentential()))));
+            } else {
+                log.debug("Context mismatch [tenant-id: {}, auth-id: {}, type: {}]", tenantId, authId,
+                        type);
+                resultHandler.handle(Future.succeededFuture(CredentialsResult.from(HTTP_NOT_FOUND)));
+            }
+        } else {
+            resultHandler.handle(Future.succeededFuture(
+                    CredentialsResult.from(HTTP_OK, new JsonObject(credential.getCrentential()))));
+        }
     }
 
     // MANAGEMENT API
@@ -99,31 +116,44 @@ public class DevicesCredentialsCacheService implements CredentialsManagementServ
 
         final RegistrationKey regKey = new RegistrationKey(tenantId, deviceId);
 
-        deviceInformation.containsKeyAsync(regKey).thenAccept(exist -> {
-            if (exist) {
+        managementCache.getAsync(regKey).thenAccept(device -> {
+                if (device != null) {
+                    if (device.isVersionMatch(resourceVersion)) {
 
-                final ArrayList<CredentialsKey> credKeysList = new ArrayList<>();
-                for (CommonCredential cred : credentials) {
-                    final JsonObject credentialObject = JsonObject.mapFrom(cred);
-                    final String type = credentialObject.getString(CredentialsConstants.FIELD_TYPE);
+                        //remove entries in adapter cache
+                        final List<CredentialsKey> keysList = device.getCredentialsKeys(tenantId);
+                        for (CredentialsKey key : keysList) {
+                            adapterCache.removeAsync(key);
+                        }
 
-                    final CredentialsKey credKey = new CredentialsKey(tenantId, cred.getAuthId(), type);
-                    credKeysList.add(credKey);
+                        // update version and credentials in management cache
+                        final String newVer = UUID.randomUUID().toString();
 
-                    this.credentials.putAsync(credKey, JsonObject.mapFrom(cred).encode());
+                        device.setVersion(newVer);
+                        device.setCredentials(JsonObject.mapFrom(credentials).encode());
+                        managementCache.putAsync(regKey, device);
+
+                        // create entries in adapter cache
+                        for (CommonCredential cred : credentials) {
+                            CredentialsKey credKey = new CredentialsKey(
+                                    tenantId,
+                                    cred.getAuthId(),
+                                    JsonObject.mapFrom(cred).getString(CredentialsConstants.FIELD_TYPE));
+
+                            AdapterCacheValueObject val = new AdapterCacheValueObject(
+                                    JsonObject.mapFrom(cred).encode(),
+                                    deviceId,
+                                    newVer);
+
+                            adapterCache.put(credKey, val);
+                        }
+                    } else {
+                        resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_PRECON_FAILED)));
+                    }
+                } else {
+                    resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_NOT_FOUND)));
                 }
-
-                final Versioned<List<CredentialsKey>> entry = new Versioned<>(credKeysList);
-                credentialsKeysForDevice.putAsync(regKey, entry).thenAccept(result -> {
-                    resultHandler.handle(Future.succeededFuture(
-                            OperationResult.ok(HTTP_OK, null, Optional.empty(), Optional.of(entry.getVersion()))));
-                });
-
-            } else {
-                resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_NOT_FOUND)));
-            }
         });
-
     }
 
     @Override
@@ -145,6 +175,8 @@ public class DevicesCredentialsCacheService implements CredentialsManagementServ
             }
         });
     }
+
+
 
     @Override
     public void createDevice(String tenantId, Optional<String> optionalDeviceId, Device device, Span span,

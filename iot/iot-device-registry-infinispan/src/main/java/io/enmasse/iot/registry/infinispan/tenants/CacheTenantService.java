@@ -5,6 +5,7 @@
 
 package io.enmasse.iot.registry.infinispan.tenants;
 
+import io.opentracing.noop.NoopSpan;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
@@ -19,19 +20,17 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
-import static java.net.URLConnection.setDefaultRequestProperty;
 import java.util.UUID;
 import org.eclipse.hono.service.management.Id;
 import org.eclipse.hono.service.management.OperationResult;
 import org.eclipse.hono.service.management.Result;
+import org.eclipse.hono.service.management.tenant.Tenant;
 import org.eclipse.hono.service.management.tenant.TenantManagementService;
-import org.eclipse.hono.service.tenant.CompleteBaseTenantService;
 import org.eclipse.hono.service.tenant.TenantService;
 import org.eclipse.hono.util.TenantObject;
 import org.eclipse.hono.util.TenantResult;
 import org.infinispan.client.hotrod.Flag;
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.Search;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
@@ -123,9 +122,13 @@ public class CacheTenantService implements TenantService, TenantManagementServic
                 resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_CONFLICT)));
                 return;
             } else {
-                tenantsCache.containsKeyAsync(tenantId).thenAccept(exists -> {
-                    if (exists) {
-                        certificateMappingCache.putAsync(certName, tenantId);
+                tenantsCache.getAsync(tenantId).thenAccept(result -> {
+                    if (result != null) {
+                        if (result.isVersionMatch(resourceVersion)){
+                            certificateMappingCache.putAsync(certName, tenantId);
+                        } else {
+                            resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_PRECON_FAILED)));
+                        }
                     } else {
                         resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_NOT_FOUND)));
                         return;
@@ -136,7 +139,7 @@ public class CacheTenantService implements TenantService, TenantManagementServic
 
         tenantsCache.containsKeyAsync(tenantId).thenAccept(containsKey -> {
             if (containsKey) {
-                final RegistryTenantObject value = new RegistryTenantObject(tenantDetails);
+                final RegistryTenantObject value = new RegistryTenantObject(tenantObj);
                 tenantsCache.replaceAsync(tenantId, value).thenAccept(result -> {
                     resultHandler.handle(Future.succeededFuture(
                             OperationResult.ok(
@@ -176,8 +179,26 @@ public class CacheTenantService implements TenantService, TenantManagementServic
         });
     }
 
+    @Override public void read(String tenantId, Span span, Handler<AsyncResult<OperationResult<Tenant>>> resultHandler) {
+        Objects.requireNonNull(tenantId);
+        Objects.requireNonNull(resultHandler);
+
+        tenantsCache.getAsync(tenantId).thenAccept(registryTenantObject -> {
+            if (registryTenantObject == null) {
+                resultHandler.handle(Future.succeededFuture(OperationResult.empty(HTTP_NOT_FOUND)));
+            } else {
+                resultHandler.handle(Future.succeededFuture(
+                        OperationResult.ok(
+                                HTTP_OK,
+                                new JsonObject(registryTenantObject.getTenantObject()).mapTo(Tenant.class),
+                                Optional.empty(),
+                                Optional.of(registryTenantObject.getVersion()))));
+            }
+        });
+    }
+
     @Override public void get(String tenantId, Handler<AsyncResult<TenantResult<JsonObject>>> resultHandler) {
-        get(tenantId, );
+        get(tenantId, NoopSpan.INSTANCE, resultHandler);
     }
 
     @Override
@@ -194,6 +215,11 @@ public class CacheTenantService implements TenantService, TenantManagementServic
                         TenantResult.from(HTTP_OK, new JsonObject(registryTenantObject.getTenantObject()))));
             }
         });
+    }
+
+    @Override
+    public void get(X500Principal x500Principal, Handler<AsyncResult<TenantResult<JsonObject>>> handler) {
+        get(x500Principal, NoopSpan.INSTANCE, handler);
     }
 
     @Override

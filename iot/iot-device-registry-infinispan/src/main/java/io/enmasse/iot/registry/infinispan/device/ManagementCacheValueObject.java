@@ -12,13 +12,13 @@ public class ManagementCacheValueObject implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    // A Json Object containing the credential.
+    // A Json Object containing the registration information.
     private String devinceInfo;
 
     // resource version for the device registration info
     private String version;
 
-    // A Json Arrays containing the credentials objects for this device.
+    // A Json Array containing the credentials objects for this device.
     private String credentials;
 
     public ManagementCacheValueObject(String devinceInfo) {
@@ -28,6 +28,14 @@ public class ManagementCacheValueObject implements Serializable {
 
     public String getVersion() {
         return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public void setCredentials(String credentials) {
+        this.credentials = credentials;
     }
 
     /**
@@ -74,5 +82,16 @@ public class ManagementCacheValueObject implements Serializable {
             result.add(((JsonObject) cred).mapTo(CommonCredential.class));
         }
         return result;
+    }
+
+    public JsonObject getCredential(final String authId, final String type) {
+        for (Object entry : new JsonArray(credentials).getList()) {
+            JsonObject cred = (JsonObject) entry;
+            if ( cred.getString(CredentialsConstants.FIELD_TYPE) == type
+                && cred.getString(CredentialsConstants.FIELD_AUTH_ID ) == authId){
+                return cred;
+            }
+        }
+        return null;
     }
 }
