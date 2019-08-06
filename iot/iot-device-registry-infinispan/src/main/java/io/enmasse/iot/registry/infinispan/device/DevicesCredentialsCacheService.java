@@ -9,7 +9,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 
 import static java.net.HttpURLConnection.*;
-import org.eclipse.hono.deviceregistry.FileBasedRegistrationService;
 import org.eclipse.hono.service.credentials.CredentialsService;
 import org.eclipse.hono.service.management.Id;
 import org.eclipse.hono.service.management.OperationResult;
@@ -56,7 +55,7 @@ public class DevicesCredentialsCacheService implements CredentialsManagementServ
     }
 
     //fixme : log or span ?
-    private static final Logger log = LoggerFactory.getLogger(FileBasedRegistrationService.class);
+    private static final Logger log = LoggerFactory.getLogger(DevicesCredentialsCacheService.class);
 
     // AMQP API
 
