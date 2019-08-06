@@ -1,5 +1,6 @@
 package io.enmasse.iot.registry.infinispan.device;
 
+import io.enmasse.iot.registry.infinispan.CacheProvider;
 import io.enmasse.iot.registry.infinispan.credentials.CredentialsKey;
 import io.opentracing.Span;
 import io.vertx.core.AsyncResult;
@@ -27,9 +28,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Repository;
 
 // TODO : add authorisation calls
 // TODO : add logging
+@Repository
+@Qualifier("infinispan")
+@Primary
 public class DevicesCredentialsCacheService implements CredentialsManagementService, DeviceManagementService,
         CredentialsService {
 
@@ -40,6 +48,12 @@ public class DevicesCredentialsCacheService implements CredentialsManagementServ
     // <(TenantId+DeviceId), (Device information + version + credentials)>
     private RemoteCache<RegistrationKey, ManagementCacheValueObject> managementCache;
 
+
+    @Autowired
+    public DevicesCredentialsCacheService (final CacheProvider provider) {
+        this.adapterCache = provider.getOrCreateCache("adaperCredentialsCache");
+        this.managementCache = provider.getOrCreateCache("managementCredentialsCache");
+    }
 
     //fixme : log or span ?
     private static final Logger log = LoggerFactory.getLogger(FileBasedRegistrationService.class);

@@ -36,6 +36,7 @@ import static org.eclipse.hono.util.RegistrationResult.from;
  */
 @Repository
 @Primary
+@Deprecated
 public class CacheRegistrationService extends CompleteBaseRegistrationService<Void> {
 
     private final RemoteCache<RegistrationKey, String> cache;
