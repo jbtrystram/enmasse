@@ -5,6 +5,7 @@
 
 package io.enmasse.iot.registry.infinispan.config;
 
+import io.enmasse.iot.registry.infinispan.CacheProvider;
 import org.eclipse.hono.deviceregistry.ApplicationConfig;
 import org.eclipse.hono.service.management.tenant.TenantManagementHttpEndpoint;
 import org.eclipse.hono.service.tenant.TenantAmqpEndpoint;
@@ -20,6 +21,17 @@ import org.springframework.context.annotation.Scope;
  */
 @Configuration
 public class InfinispanRegistryConfig extends ApplicationConfig {
+
+    /**
+     * Creates a new instance of the CacheProvider.
+     *
+     * @return The provider.
+     */
+    @Bean
+    @Scope("prototype")
+    public CacheProvider cacheProvider(InfinispanProperties props) {
+        return new CacheProvider(props);
+    }
 
     /**
      * Creates a new instance of an AMQP 1.0 protocol handler for Hono's <em>Tenant</em> API.

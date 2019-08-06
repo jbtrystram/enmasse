@@ -32,6 +32,7 @@ import org.eclipse.hono.util.TenantResult;
 import org.infinispan.client.hotrod.Flag;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
@@ -50,6 +51,7 @@ import java.util.Optional;
  */
 @Repository
 @Primary
+@Qualifier("infinispan")
 public class CacheTenantService implements TenantService, TenantManagementService {
 
     // <(tenantId), (credential + deviceId + sync-flag + registration data version)>

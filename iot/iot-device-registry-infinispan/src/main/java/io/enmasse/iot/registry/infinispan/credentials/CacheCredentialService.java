@@ -34,6 +34,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Primary
+@Deprecated
 public class CacheCredentialService extends CompleteBaseCredentialsService<Void> {
 
     private final RemoteCache<CredentialsKey, String> cache;
