@@ -10,6 +10,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Verticle;
 import java.util.LinkedList;
 import java.util.List;
+import org.eclipse.hono.deviceregistry.Application;
 import org.eclipse.hono.service.AbstractBaseApplication;
 import org.eclipse.hono.service.HealthCheckProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +85,6 @@ public class InfinispanRegistry extends AbstractBaseApplication {
      * @param args command line arguments to pass to the server.
      */
     public static void main(final String[] args) {
-        SpringApplication.run(InfinispanRegistry.class, args);
+        SpringApplication.run(Application.class, args);
     }
 }
