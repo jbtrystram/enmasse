@@ -9,7 +9,7 @@ hono:
     port: 35672
     name: device-registry
     validation:
-      certPath: /home/jibou/github/hono/demo-certs/certs/auth-server-cert.pem
+      sharedSecret: 1234567890123456789012345678901234567890123456789012345678901234
   registry:
     amqp:
       Port: 25672
