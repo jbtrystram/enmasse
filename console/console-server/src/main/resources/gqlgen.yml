@@ -19,6 +19,7 @@ autobind:
   - github.com/enmasseproject/enmasse/pkg/consolegraphql
   - github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1
   - github.com/enmasseproject/enmasse/pkg/apis/admin/v1beta2
+  - github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1
   - k8s.io/apimachinery/pkg/apis/meta/v1
   - k8s.io/apimachinery/pkg/types
 
@@ -154,3 +155,17 @@ models:
     model: github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1.RouteServicePort
   RouteTlsTermination_enmasse_io_v1beta1:
     model: github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1.RouteTlsTermination
+
+  IoTProjectStatus_iot_enmasse_io_v1alpha1:
+    model: github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1.IoTProjectStatus
+  AddressConfig_iot_enmasse_io_v1alpha1:
+    model: github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1.AddressConfig
+  AddressesConfig_iot_enmasse_io_v1alpha1:
+    model: github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1.AddressesConfig
+  IotProjectSpec_iot_enmasse_io_v1alpha1:
+    model: github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1.IoTProjectSpec
+  IoTProject_iot_enmasse_io_v1alpha1:
+    model: github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1.IoTProject
+
+  IotProject_iot_enmasse_io_v1alpha1_input:
+    model: github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1.IoTProject

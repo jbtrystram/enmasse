@@ -12,6 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type ProjectListResultConsoleapiIotEnmasseIoV1alpha1 interface {
+	IsProjectListResultConsoleapiIotEnmasseIoV1alpha1()
+}
+
 type AddressQueryResultConsoleapiEnmasseIoV1beta1 struct {
 	Total     int                             `json:"total"`
 	Addresses []*consolegraphql.AddressHolder `json:"addresses"`
@@ -54,6 +58,40 @@ type ConnectionQueryResultConsoleapiEnmasseIoV1beta1 struct {
 	Connections []*consolegraphql.Connection `json:"connections"`
 }
 
+type CredentialsQueryResultConsoleapiIotEnmasseIoV1alpha1 struct {
+	Total       int      `json:"total"`
+	Credentials []string `json:"credentials"`
+}
+
+type Device struct {
+	DeviceID    string `json:"deviceId"`
+	Enabled     bool   `json:"enabled"`
+	ViaGateway  bool   `json:"viaGateway"`
+	JSONData    string `json:"jsonData"`
+	Credentials string `json:"credentials"`
+}
+
+type DeviceIotConsoleInput struct {
+	DeviceID    string `json:"deviceId"`
+	Enabled     bool   `json:"enabled"`
+	ViaGateway  bool   `json:"viaGateway"`
+	JSONData    string `json:"jsonData"`
+	Credentials string `json:"credentials"`
+}
+
+type DevicesQueryResultConsoleapiIotEnmasseIoV1alpha1 struct {
+	Total   int       `json:"total"`
+	Devices []*Device `json:"devices"`
+}
+
+type IotEndpoint struct {
+	Name IotEndpointName `json:"name"`
+	URL  *string         `json:"url"`
+	Host string          `json:"host"`
+	Port int             `json:"port"`
+	TLS  *bool           `json:"tls"`
+}
+
 type KeyValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -76,6 +114,11 @@ type MetadataConsoleapiEnmasseIoV1beta1 struct {
 	ResourceVersion   string      `json:"resourceVersion"`
 	CreationTimestamp string      `json:"creationTimestamp"`
 	UID               string      `json:"uid"`
+}
+
+type ProjectListQueryResultConsoleapiIotEnmasseIoV1alpha1 struct {
+	Total   int                                               `json:"total"`
+	Objects []ProjectListResultConsoleapiIotEnmasseIoV1alpha1 `json:"objects"`
 }
 
 type AddressSpaceType string
@@ -204,6 +247,98 @@ func (e *AuthenticationServiceType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e AuthenticationServiceType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type IotCredentials string
+
+const (
+	IotCredentialsPsk            IotCredentials = "psk"
+	IotCredentialsHashedPassword IotCredentials = "hashed_password"
+	IotCredentialsX509           IotCredentials = "x509"
+)
+
+var AllIotCredentials = []IotCredentials{
+	IotCredentialsPsk,
+	IotCredentialsHashedPassword,
+	IotCredentialsX509,
+}
+
+func (e IotCredentials) IsValid() bool {
+	switch e {
+	case IotCredentialsPsk, IotCredentialsHashedPassword, IotCredentialsX509:
+		return true
+	}
+	return false
+}
+
+func (e IotCredentials) String() string {
+	return string(e)
+}
+
+func (e *IotCredentials) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IotCredentials(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IotCredentials", str)
+	}
+	return nil
+}
+
+func (e IotCredentials) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type IotEndpointName string
+
+const (
+	IotEndpointNameHTTPAdapter                  IotEndpointName = "HttpAdapter"
+	IotEndpointNameMqttAdapter                  IotEndpointName = "MqttAdapter"
+	IotEndpointNameAmqpAdapter                  IotEndpointName = "AmqpAdapter"
+	IotEndpointNameCoapAdapter                  IotEndpointName = "CoapAdapter"
+	IotEndpointNameDeviceRegistrationManagement IotEndpointName = "DeviceRegistrationManagement"
+	IotEndpointNameDeviceCredentialManagement   IotEndpointName = "DeviceCredentialManagement"
+)
+
+var AllIotEndpointName = []IotEndpointName{
+	IotEndpointNameHTTPAdapter,
+	IotEndpointNameMqttAdapter,
+	IotEndpointNameAmqpAdapter,
+	IotEndpointNameCoapAdapter,
+	IotEndpointNameDeviceRegistrationManagement,
+	IotEndpointNameDeviceCredentialManagement,
+}
+
+func (e IotEndpointName) IsValid() bool {
+	switch e {
+	case IotEndpointNameHTTPAdapter, IotEndpointNameMqttAdapter, IotEndpointNameAmqpAdapter, IotEndpointNameCoapAdapter, IotEndpointNameDeviceRegistrationManagement, IotEndpointNameDeviceCredentialManagement:
+		return true
+	}
+	return false
+}
+
+func (e IotEndpointName) String() string {
+	return string(e)
+}
+
+func (e *IotEndpointName) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = IotEndpointName(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid IotEndpointName", str)
+	}
+	return nil
+}
+
+func (e IotEndpointName) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

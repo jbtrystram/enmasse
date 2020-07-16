@@ -249,7 +249,7 @@ const typeDefs = gql`
 
   type AddressSpace_consoleapi_enmasse_io_v1beta1 {
     metadata: ObjectMeta_v1!
-    kind: String!  
+    kind: String!
     spec: AddressSpaceSpec_enmasse_io_v1beta1!
     status: AddressSpaceStatus_enmasse_io_v1beta1
     connections(
@@ -731,16 +731,10 @@ const typeDefs = gql`
     type: String!
   }
 
-  type AddressConfig_iot_enmasse_io_v1alpha1 {
-    name: String!
-    plan: String!
-    type: String!
-  }
-
   type AddressesConfig_iot_enmasse_io_v1alpha1 {
-    Telemetry: AddressConfig_iot_enmasse_io_v1alpha1!
-    Event: AddressConfig_iot_enmasse_io_v1alpha1!
-    Command: [AddressConfig_iot_enmasse_io_v1alpha1!]!
+    Telemetry: AddressSpec_enmasse_io_v1beta1!
+    Event: AddressSpec_enmasse_io_v1beta1!
+    Command: [AddressSpec_enmasse_io_v1beta1!]!
   }
 
   type IotProjectSpec_iot_enmasse_io_v1alpha1 {
@@ -801,7 +795,8 @@ const typeDefs = gql`
   }
 
   union ProjectListResult_consoleapi_iot_enmasse_io_v1alpha1 =
-      AddressSpace_consoleapi_enmasse_io_v1beta1 | IoTProject_iot_enmasse_io_v1alpha1
+      AddressSpace_consoleapi_enmasse_io_v1beta1
+    | IoTProject_iot_enmasse_io_v1alpha1
 
   #
   # Inputs Types
