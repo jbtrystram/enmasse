@@ -63,14 +63,6 @@ type CredentialsQueryResultConsoleapiIotEnmasseIoV1alpha1 struct {
 	Credentials []string `json:"credentials"`
 }
 
-type Device struct {
-	DeviceID    string `json:"deviceId"`
-	Enabled     bool   `json:"enabled"`
-	ViaGateway  bool   `json:"viaGateway"`
-	JSONData    string `json:"jsonData"`
-	Credentials string `json:"credentials"`
-}
-
 type DeviceIotConsoleInput struct {
 	DeviceID    string `json:"deviceId"`
 	Enabled     bool   `json:"enabled"`
@@ -80,16 +72,8 @@ type DeviceIotConsoleInput struct {
 }
 
 type DevicesQueryResultConsoleapiIotEnmasseIoV1alpha1 struct {
-	Total   int       `json:"total"`
-	Devices []*Device `json:"devices"`
-}
-
-type IotEndpoint struct {
-	Name IotEndpointName `json:"name"`
-	URL  *string         `json:"url"`
-	Host string          `json:"host"`
-	Port int             `json:"port"`
-	TLS  *bool           `json:"tls"`
+	Total   int                      `json:"total"`
+	Devices []*consolegraphql.Device `json:"devices"`
 }
 
 type KeyValue struct {

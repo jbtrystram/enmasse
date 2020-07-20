@@ -7,7 +7,9 @@ package consolegraphql
 
 import (
 	"container/ring"
+	"github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1"
 	"github.com/enmasseproject/enmasse/pkg/apis/enmasse/v1beta1"
+	"github.com/enmasseproject/enmasse/pkg/apis/iot/v1alpha1"
 	"github.com/enmasseproject/enmasse/pkg/util"
 	authv1 "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -166,6 +168,10 @@ func (ash *AddressSpaceHolder) GetControllingResourceAttributes() *authv1.Resour
 	return getResourceAttributes(gvk, ash.Namespace)
 }
 
+func (ash *AddressSpaceHolder) IsProjectListResultConsoleapiIotEnmasseIoV1alpha1() bool {
+	return true
+}
+
 type AddressHolder struct {
 	v1beta1.Address `json:",inline"`
 	Metrics         []*Metric `json:"metrics"`
@@ -193,4 +199,42 @@ func kindToResource(gvk schema.GroupVersionKind) string {
 	plural, _ := meta.UnsafeGuessKindToResource(gvk)
 	resource := plural.Resource
 	return resource
+}
+
+type IotProjectHolder struct {
+	v1alpha1.IoTProject `json:",inline"`
+	Enabled bool
+	MessagingEndpoints []*v1.MessagingEndpoint
+	Endpoints []IotEndpoint
+}
+
+func (ash *IotProjectHolder) IsProjectListResultConsoleapiIotEnmasseIoV1alpha1() bool {
+	return true
+}
+
+type IotEndpoint struct {
+	Name string
+	Url string
+	Host string
+	Port int
+	Tls bool
+}
+
+type Device struct {
+	deviceId string
+	enabled bool
+	via []string
+	viaGroups []string
+	memberOf []string
+	status DeviceStatus
+	ext string
+	defaults string
+	credentials string
+}
+
+type DeviceStatus struct {
+	created string
+	updated string
+	lastUser string
+	lastSeen string
 }
